@@ -13,14 +13,29 @@ class ObstacleAvoidanceAgent():
     self._num_acts = num_acts
     self._min_reference_velocity_magnitude = 1.0
     self._reference_velocity_magnitude = 2.5
-    
-    # initialization
+    self._model = [] # need to initialize
+    # initialization of queue and stuff
         
   def getActions(self, obs, done, images, current_goal_position):
-    action = np.zeros([self._num_envs,self._num_acts], dtype=np.float32)
-    action[0,0] += -0.01
+    # 1) transform input and create queue
+    model_input = self.processInput(obs, done, images, current_goal_position)
+    # 2) get actions from model
+    action, _ = self._model.predict(obs, deterministic=True)
+
     return action
-  
+    
+  def processInput(self, obs, done, images, current_goal_position):
+    # 1) get velocity
+    velocity_reference = self.calculateVelocity( obs, current_goal_position)
+    
+    # 2) trasformation of obs into what policy needs
+    
+    # 3) ae
+    
+    # 4) update tcn queue 
+    
+    return tcn_queue
+    
   def calculateVelocity(self, obs, current_goal_position):
     drone_position = obs[0:3]
     goal_relative_position = current_goal_position - drone_position
