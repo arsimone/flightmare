@@ -1,7 +1,15 @@
 env:
   seed: 1
-  scene_id: 0  # 0 box environment, 3 natureforest
-  num_envs: 1
-  num_threads: 10 
-  render: no 
-  start_rot: [0.0, 0.0, 0.0] 
+  scene_id: 0  # 0 warehouse, 1 evaluation, 3 natureforest
+  num_envs: 30
+  num_threads: 10
+  render: yes
+  dim_columns: 4
+  spacing_between_drones_rows: 40.0
+  spacing_between_drones_columns: 40.0
+  start_rot: [0.0, 0.0, 0.0] #-0.70071, 0.70071]
+
+data_collection:
+  collect_data: no     # save onboard images in FLIGHTMARE_DATA_PATH
+  offset_data: 0    # useful if there are already some samples in the data folder
+  subsampling: 4       # one image saved every n

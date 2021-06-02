@@ -39,6 +39,7 @@ class VecEnv {
   // public set functions
   void setSeed(const int seed);
   void setObjectsDensities(Vector<> object_density_fractions);
+  void setVelocityReferences(Ref<MatrixRowMajor<>> reference_velocities_high_level_controller);
 
   // public get functions
   void getObs(Ref<MatrixRowMajor<>> obs, Ref<DepthImageMatrixRowMajor<>> img);
@@ -53,7 +54,7 @@ class VecEnv {
 
   // flightmare (visualization)
   bool setUnity(bool render);
-  bool connectUnity();
+  bool connectUnity(const int input_port, const int output_port);
   void disconnectUnity();
 
   // public functions
@@ -78,7 +79,7 @@ class VecEnv {
   // step every environment
   void perAgentStep(int agent_id, Ref<MatrixRowMajor<>> act,
                     Ref<MatrixRowMajor<>> obs, Ref<Vector<>> reward,
-                    Ref<BoolVector<>> done);
+                    Ref<BoolVector<>> done, Ref<MatrixRowMajor<>> extra_info);
   void perAgentStepUnity(int agent_id, Ref<MatrixRowMajor<>> obs, Ref<DepthImageMatrixRowMajor<>> images, 
                     Ref<Vector<>> reward, Ref<BoolVector<>> done, Ref<MatrixRowMajor<>> extra_info);
   // create objects
@@ -98,7 +99,9 @@ class VecEnv {
   int seed_, num_envs_, obs_dim_, act_dim_;
   std::pair<int,int> frame_dim_;
   std::vector<bool> is_done_unity_;
-  Matrix<> obs_dummy_;
+  MatrixRowMajor<3, 12> obs_dummy_;
+  DepthImageMatrixRowMajor<3, 49152> img_dummy;
+  QuadState state_;
 
   // yaml configurations
   YAML::Node cfg_;

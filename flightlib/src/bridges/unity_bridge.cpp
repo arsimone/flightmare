@@ -5,8 +5,8 @@ namespace flightlib {
 // constructor
 UnityBridge::UnityBridge()
   : client_address_("tcp://*"),
-    pub_port_("10253"),
-    sub_port_("10254"),
+    pub_port_("10296"),
+    sub_port_("10297"),
     num_frames_(0),
     last_downloaded_utime_(0),
     last_download_debug_utime_(0),
@@ -34,7 +34,17 @@ bool UnityBridge::initializeConnections() {
   return true;
 }
 
-bool UnityBridge::connectUnity(const SceneID scene_id) {
+bool UnityBridge::connectUnity(const SceneID scene_id, const int input_port, const int output_port) {
+  
+  pub_port_ = std::to_string(input_port);
+  sub_port_ = std::to_string(output_port);
+
+  // initialize connections 
+  if (!connections_initialized_) {
+    initializeConnections();
+    connections_initialized_ = true;
+  }
+  
   Scalar time_out_count = 0;
   Scalar sleep_useconds = 0.2 * 1e5;
   setScene(scene_id);
@@ -126,7 +136,6 @@ bool UnityBridge::getRender(const FrameID frame_id) {
     pub_msg_.vehicles[idx].rotation = quaternionRos2Unity(quad_state.q());
     pub_msg_.vehicles[idx].box_center = positionRos2Unity(unity_quadrotors_[idx]->box_center_);
     pub_msg_.vehicles[idx].drone_velocity     = positionRos2Unity(quad_state.v);
-    pub_msg_.vehicles[idx].goal_direction     = positionRos2Unity(quad_state.v);
   }
 
   // create new message object
@@ -204,7 +213,6 @@ bool UnityBridge::addStaticObject(std::shared_ptr<StaticObject> static_object) {
   static_objects_.push_back(static_object);
   settings_.objects.push_back(object_t);
   pub_msg_.objects.push_back(object_t);
-  return true;
 }
 
 bool UnityBridge::handleOutput() {
@@ -215,19 +223,16 @@ bool UnityBridge::handleOutput() {
   std::string json_sub_msg = msg.get(0);
   // parse metadata
   SubMessage_t sub_msg = json::parse(json_sub_msg);
-
   size_t image_i = 1;
   // ensureBufferIsAllocated(sub_msg);
   for (size_t idx = 0; idx < settings_.vehicles.size(); idx++) {
     // update vehicle collision flag
     unity_quadrotors_[idx]->setCollision(sub_msg.sub_vehicles[idx].collision);
-
     // feed image data to RGB camera
     for (const auto& cam : settings_.vehicles[idx].cameras) {
       for (size_t layer_idx = 0; layer_idx <= cam.enabled_layers.size();
            layer_idx++) {
         if (!layer_idx == 0 && !cam.enabled_layers[layer_idx - 1]) continue;
-
         if (layer_idx == 1) {
           // depth
           uint32_t image_len = cam.width * cam.height * 4;
@@ -243,23 +248,27 @@ bool UnityBridge::handleOutput() {
           memcpy(new_image.data, image_data, image_len);
           // Flip image since OpenCV origin is upper left, but Unity's is lower
           // left.
-          new_image = new_image * (15.0f);
+      
           cv::flip(new_image, new_image, 0);
 
+          cv::imshow("Onboard Camera", new_image);
+          cv::waitKey(1);
 
           unity_quadrotors_[idx]
             ->getCameras()[cam.output_index]
             ->feedImageQueue(layer_idx, new_image);
 
-
         } else {
+          logger_.warn("line 271");
           uint32_t image_len = cam.width * cam.height * cam.channels;
           // Get raw image bytes from ZMQ message.
           // WARNING: This is a zero-copy operation that also casts the input to
           // an array of unit8_t. when the message is deleted, this pointer is
           // also dereferenced.
           const uint8_t* image_data;
+          logger_.warn("line 278");
           msg.get(image_data, image_i);
+          logger_.warn("line 279");
           image_i = image_i + 1;
           // Pack image into cv::Mat
           cv::Mat new_image =
@@ -273,9 +282,9 @@ bool UnityBridge::handleOutput() {
           if (cam.channels == 3) {
             cv::cvtColor(new_image, new_image, CV_RGB2BGR);
           }
-          unity_quadrotors_[idx]
-            ->getCameras()[cam.output_index]
-            ->feedImageQueue(layer_idx, new_image);
+          logger_.warn("line 297");
+          unity_quadrotors_[idx]->getCameras()[cam.output_index]->feedImageQueue(layer_idx, new_image);
+          logger_.warn("line 297");
         }
       }
     }

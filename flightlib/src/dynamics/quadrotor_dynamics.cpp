@@ -92,6 +92,7 @@ Vector<4> QuadrotorDynamics::clampThrust(const Vector<4> thrusts) const {
 }
 
 Scalar QuadrotorDynamics::clampThrust(const Scalar thrust) const {
+  // std::cout << "Thrust max is " <<thrust_max_ << std::endl << "Thrust min is " <<thrust_min_ << std::endl<< "Thrust clamped is " << std::clamp(thrust, thrust_min_, thrust_max_) << std::endl;
   return std::clamp(thrust, thrust_min_, thrust_max_);
 }
 
@@ -169,9 +170,11 @@ bool QuadrotorDynamics::updateParams(const YAML::Node& params) {
     motor_tau_inv_ =
       (1.0 / params["quadrotor_dynamics"]["motor_tau"].as<Scalar>());
     std::vector<Scalar> thrust_map;
-    thrust_map =
-      params["quadrotor_dynamics"]["thrust_map"].as<std::vector<Scalar>>();
-    thrust_map_ = Map<Vector<3>>(thrust_map.data());
+    // thrust_map =
+    //   params["quadrotor_dynamics"]["thrust_map"].as<std::vector<Scalar>>();
+    // thrust_map_ = Map<Vector<3>>(thrust_map.data());
+    thrust_min_ = params["quadrotor_dynamics"]["thrust_min"].as<Scalar>();
+    thrust_max_ = params["quadrotor_dynamics"]["thrust_max"].as<Scalar>();
     kappa_ = params["quadrotor_dynamics"]["kappa"].as<Scalar>();
     std::vector<Scalar> omega_max;
     omega_max =

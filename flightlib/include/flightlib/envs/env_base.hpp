@@ -10,11 +10,19 @@
 #include <unordered_map>
 #include <vector>
 
+// //PyBind
+// #include <pybind11/embed.h>
+// #include <pybind11/numpy.h>
+
 // yaml
 #include <yaml-cpp/yaml.h>
 
 // alpha gym types
 #include "flightlib/common/types.hpp"
+
+
+
+// namespace py = pybind11;
 
 namespace flightlib {
 
@@ -25,7 +33,7 @@ class EnvBase {
 
   // (pure virtual) public methods (has to be implemented by child classes)
   virtual bool reset(Ref<Vector<>> obs, Ref<DepthImage<>> img, const bool random = true) = 0;
-  virtual Scalar step(const Ref<Vector<>> act, Ref<Vector<>> obs) = 0;
+  virtual Scalar step(const Ref<Vector<>> act, Ref<Vector<>> obsg) = 0;
   virtual bool getObs(Ref<Vector<>> obs) = 0;
 
   // (virtual) public methods (implementations are optional.)

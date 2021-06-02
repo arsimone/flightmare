@@ -1,26 +1,57 @@
 quadrotor_env:
-   camera: no
-   sim_dt: 0.02 
-   max_t: 5.0
-   add_camera: yes
-   world_box: [-15, -15, -0.6, 15, 15, 8.3] # set limit to the explorable space [xmin,ymin,zmin,xmax,ymax,zmax]
-   camera_rot: [-90.0, 0.0, 5.0] #yaw pitch roll (ZYX)
-   camera_pos: [0.176, 0.0, 0.05]
-
+  camera: no
+  sim_dt: 0.02 
+  max_t: 5.0
+  add_camera: yes
+  world_box: [-15., -15., -0.3, 15., 15., 8.0] # set limit to the explorable space [xmin,ymin,zmin,xmax,ymax,zmax]
+  world_box_evaluation: [-30., -30., -0.3, 30., 30., 8.0] # set limit to the explorable space [xmin,ymin,zmin,xmax,ymax,zmax]
+  camera_rot: [-90.0, 0.0, 5.0] #yaw pitch roll (ZYX)
+  camera_pos: [0.177, 0.0, 0.05]
+  goal_relative_position: [0, 10, 0] # x, y, z
+  goal_out_box_prob: 0.0
+  depth_scale: 0.001
+  max_speed: 5
+  speed_threshold: 0.5
+  init_max_speed: 0.0
+  init_ori_factor: [1.0, 0.0, 0.0]         # must be between 0 and 1. 0 always straight and 1 completely random [yaw, roll, pitch]
+  
 quadrotor_dynamics:
   mass: 0.73
   arm_l: 0.17
-  motor_omega_min: 150.0 # motor rpm min
-  motor_omega_max: 3000.0 # motor rpm max
-  motor_tau: 0.0001 # motor step response
+  motor_omega_max: 3000.0       # motor rpm max
+  motor_omega_min: 150.0        # motor rpm min
+  motor_tau: 0.0001             # motor step response
   thrust_map: [1.3298253500372892e-06, 0.0038360810526746033, -1.7689986848125325]
-  kappa: 0.016 # rotor drag coeff
-  omega_max: [6.0, 6.0, 6.0]  # body rate constraint (x, y, z) 
+  thrust_max: 12
+  thrust_min: 0
+  kappa: 0.016                  # rotor drag coeff
+  omega_max: [5.0, 5.0, 5.0]    # body rate constraint (x, y, z) 
   drag_coeff: 0.03              # drag coefficient for v^2
 
+velocity_planner:
+  high_level_controller_mode: no
+  goal_change_dist: 3        # distance in m at which the goal is considered reached
+
+
 rl:
-  pos_coeff: -0.002        # reward coefficient for position 
-  ori_coeff: -0.002        # reward coefficient for orientation
-  lin_vel_coeff: -0.0002   # reward coefficient for linear velocity
-  ang_vel_coeff: -0.0002   # reward coefficient for angular velocity
-  act_coeff: -0.0002  # reward coefficient for control actions
+  thrust_scaling: 4.0           # Scaling factor for cumulative thrust express in g (9.81 m/s^2)
+  max_episode_steps: 5000       # number of steps before reset
+  avg_steps_per_ref: 300        # number of steps before reset
+  vel_off_steps: 75             # number of steps before speed check
+  vel_fading_saturation: 50             # number of steps velocity magnitude penalty reaches max
+  vel_fading_exp: 5             # number of steps velocity magnitude penalty reaches max
+  vel_off_ori: -1              # minimum cos between velocity and reference at speed check
+  vel_off_mag: 100.0              # maximum magnitude error at speed check
+  alive_rew: 0.329            # reward coefficient for stayng alive (actually it scales also with the others this is just an addition) 
+  ori_coeff: 0.75                  # reward coefficient for orientation
+  lin_vel_ori_coeff: 0.75                  # reward coefficient for linear velocity direction
+  lin_vel_mag_coeff: 1                # reward coefficient for linear velocity magnitude
+  lin_vel_still_coeff: 4                # reward coefficient for linear velocity magnitude if still
+  ang_vel_coeff: [0.1, 0.003]         # reward coefficient for angular velocity 0 - pitch and roll rate, 1 - yaw rate
+  act_coeff: [-0.0008, -0.008, -0.03]  # reward coefficient for control actions
+  world_box_penalty: -20 #-10                 # penalty for going out of the world box
+  velocity_too_off_penalty: -5                  # terminal penalty for having velocity too off
+  crash_vel_coeff: -1 #-1               # penalty on crash increase proportionally to speed     
+  crash_dist_coeff: 0             # penalty on how far to the goal was the crash          
+  crash_penalty: -20 #-10             # fixed penalty on crash
+  kp_ang_velz: 10            # coefficient multiplied by the angle error to obtain the ref velocity (5 means angle covered in 1/5s ideally)

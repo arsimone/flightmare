@@ -3,6 +3,7 @@
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/stl_bind.h>
 
 // flightlib
 #include "flightlib/envs/env_base.hpp"
@@ -23,6 +24,7 @@ PYBIND11_MODULE(flightgym, m) {
     .def("testStep", &VecEnv<QuadrotorEnv>::testStep)
     .def("setSeed", &VecEnv<QuadrotorEnv>::setSeed)
     .def("setObjectsDensities", &VecEnv<QuadrotorEnv>::setObjectsDensities)
+    .def("setVelocityReferences", &VecEnv<QuadrotorEnv>::setVelocityReferences)
     .def("close", &VecEnv<QuadrotorEnv>::close)
     .def("isTerminalState", &VecEnv<QuadrotorEnv>::isTerminalState)
     .def("curriculumUpdate", &VecEnv<QuadrotorEnv>::curriculumUpdate)
@@ -34,7 +36,7 @@ PYBIND11_MODULE(flightgym, m) {
     .def("getFrameDim", &VecEnv<QuadrotorEnv>::getFrameDim)
     .def("getExtraInfoNames", &VecEnv<QuadrotorEnv>::getExtraInfoNames)
     .def("__repr__", [](const VecEnv<QuadrotorEnv>& a) {
-      return "RPG Drone Racing Environment";
+      return "RPG Drone Racing Environment with Camera";
     });
 
   py::class_<TestEnv<QuadrotorEnv>>(m, "TestEnv_v0")

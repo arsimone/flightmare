@@ -30,6 +30,7 @@ bool Quadrotor::run(const Command &cmd, const Scalar ctl_dt) {
 }
 
 bool Quadrotor::run(const Scalar ctl_dt) {
+  
   if (!state_.valid()) return false;
   if (!cmd_.valid()) return false;
 
@@ -44,15 +45,17 @@ bool Quadrotor::run(const Scalar ctl_dt) {
   while (remain_ctl_dt > 0.0) {
     const Scalar sim_dt = std::min(remain_ctl_dt, max_dt);
 
-    const Vector<4> motor_thrusts_des =
+    // check if the command is expressed in thrust and body rates or in single rotor thrusts
+    const Vector<4> motor_thrusts_des = 
       cmd_.isSingleRotorThrusts() ? cmd_.thrusts
                                   : runFlightCtl(sim_dt, state_.w, cmd_);
+    for(int i=0; i<motor_thrusts_des.size(); ++i)
 
     runMotors(sim_dt, motor_thrusts_des);
     // motor_thrusts_ = cmd_.thrusts;
 
     const Vector<4> force_torques = B_allocation_ * motor_thrusts_;
-
+    // std::cout << "Force is " << std::endl << force_torques[0] << std::endl;
     // Compute linear acceleration and body torque
     const Vector<3> force(0.0, 0.0, force_torques[0]);
     state_.a = state_.q() * force * 1.0 / dynamics_.getMass() + gz_ - state_.v * state_.v.norm() * dynamics_.drag_coeff_;
@@ -160,7 +163,6 @@ bool Quadrotor::setWorldBox(const Ref<Matrix<3, 2>> box) {
   return true;
 }
 
-
 bool Quadrotor::constrainInWorldBox(const QuadState &old_state) {
   if (!old_state.valid()) return false;
 
@@ -178,7 +180,7 @@ bool Quadrotor::constrainInWorldBox(const QuadState &old_state) {
     state_.x(QS::VELY) = 0.0;
   }
 
-  // violate world box constraint in the x-axis
+  // violate world box constraint in the z-axis
   if (state_.x(QS::POSZ) <= world_box_(2, 0) ||
       state_.x(QS::POSZ) > world_box_(2, 1)) {
     //

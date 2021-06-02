@@ -20,26 +20,31 @@ class FlightEnvVec(VecEnv):
         self.pub_port = 10253
         self.sub_port = 10254
         self.test = False   # Flag for testing time
-        self.render = True   # Flag for testing time
+        self.render = False   # Flag for testing time
         self.count = 0
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') 
         self.ae_fts = 512  # number of autoencoder features
+        self.tcn_time_buffer = 80  # number of time steps that are stored in the queue
+        self.tcn_subsampling = 5  # one every n is then forwarded to the tcn
+        self.tcn_input_size = np.floor_divide(self.tcn_time_buffer, self.tcn_subsampling)
         self.ae_weight = os.environ['FLIGHTMARE_AE_PATH'] + '/saved/CAE_512_CP_epoch1140.pth'
         self.num_obs = self.wrapper.getObsDim()
         self.num_acts = self.wrapper.getActDim()
         self.frame_dim = self.wrapper.getFrameDim()
-        print("Observations: ", self.num_obs)
+        print("Observations: ", self.num_obs + self.ae_fts)
         print("Actions: ", self.num_acts)
         print("image shape:", self.frame_dim)
         self._observation_space = spaces.Box(
-            np.ones(self.num_obs + self.ae_fts) * -np.Inf,
-            np.ones(self.num_obs + self.ae_fts) * np.Inf,
+            np.ones((self.num_obs + self.ae_fts, self.tcn_input_size)) * -np.Inf,
+            np.ones((self.num_obs + self.ae_fts, self.tcn_input_size)) * np.Inf,
             dtype=np.float32)
         self._action_space = spaces.Box(
             low=np.ones(self.num_acts) * -1.,
             high=np.ones(self.num_acts) * 1.,
             dtype=np.float32)
-        self._observations = np.zeros((self.num_envs, self.num_obs + self.ae_fts), dtype=np.float32)
+        self._latest_observations = np.zeros((self.num_envs, self.num_obs + self.ae_fts), dtype=np.float32)
+        self._observations_queue = np.zeros((self.num_envs, self.num_obs + self.ae_fts, self.tcn_time_buffer), dtype=np.float32)
+        self._observations = np.zeros((self.num_envs, self.num_obs + self.ae_fts, self.tcn_input_size), dtype=np.float32)
         self._odometry = np.zeros([self.num_envs, self.num_obs], dtype=np.float32)
         self.imgs_array = np.zeros((self.num_envs, self.frame_dim[0]*self.frame_dim[1]), dtype=np.float32)
         self._reward = np.zeros(self.num_envs, dtype=np.float32)
@@ -50,12 +55,15 @@ class FlightEnvVec(VecEnv):
         self.rewards = [[] for _ in range(self.num_envs)]
 
         self.net = CAE()
+        self.dumbNet = torch.nn.Sequential(
+            torch.nn.AvgPool2d((6,6),(6,6)),
+            torch.nn.Flatten()
+        )
         self.net.load_state_dict(torch.load(self.ae_weight, map_location=self.device))
         self.net.to(self.device)
         for parameter in self.net.parameters():
             parameter.requires_grad = False
         self.max_episode_steps = 1500
-        self.images = []
 
         # self._video_name = '~/Videos/tesi/onboard.avi'
         # self._fourcc = cv.VideoWriter_fourcc(*'MJPG')
@@ -63,7 +71,7 @@ class FlightEnvVec(VecEnv):
 
     def seed(self, seed=0):
         self.wrapper.setSeed(seed)
-
+        
     def set_objects_densities(self, object_density_fractions):
         if(self.render):
             self.wrapper.setObjectsDensities(object_density_fractions)
@@ -73,7 +81,8 @@ class FlightEnvVec(VecEnv):
     def step(self, action):
         self.wrapper.step(action, self._odometry, self.imgs_array,
                           self._reward, self._done, self._extraInfo)
-        self._observations[:, :self.num_obs] = self._odometry
+        self._odometry[:,-3:] = 0
+        self._latest_observations[:, :self.num_obs] = self._odometry
         
         # ----- Uncomment below to check if images are correct -----
         # images = 255 - self.imgs_array.reshape((self.num_envs, self.frame_dim[0],
@@ -86,13 +95,11 @@ class FlightEnvVec(VecEnv):
             with torch.no_grad():
                 images = 1 - self.imgs_array.reshape((self.num_envs, self.frame_dim[0],
                                                     self.frame_dim[1]), order='F')
-                self.images = images
                 images_tensor = torch.from_numpy(images).float().to(self.device)
-                
                 # encode image
                 encoded_rec, encoded = self.net.encode((images_tensor.unsqueeze(1)))
-                self._observations[:, self.num_obs:] = encoded.cpu().detach().numpy().reshape(self.num_envs, self.ae_fts)
-                
+                # encoded = self.dumbNet(images_tensor)
+                self._latest_observations[:, self.num_obs:] = encoded.cpu().detach().numpy().reshape(self.num_envs, self.ae_fts)
                 if(self.test):
                     mask_tensor = self.net.decode(encoded_rec)
                     mask = (mask_tensor.cpu().detach().numpy().reshape((self.num_envs, self.frame_dim[0], self.frame_dim[1]), order='F')).astype(np.float32)
@@ -122,23 +129,28 @@ class FlightEnvVec(VecEnv):
                 epinfo = {"r": eprew, "l": eplen}
                 info[i]['episode'] = epinfo
                 self.rewards[i].clear()
-        # print("[VecEnvWrapper/step] The observation shape is ",self._observation.shape)
-
-        # env_extra_info = info[0].get("extra_info")
-        # drone_position = np.asarray([env_extra_info['relative_pos_x'], env_extra_info['relative_pos_y'], env_extra_info['relative_pos_z']], dtype=np.float32)
-        # self._observations[0, :3] = drone_position
+                self._observations_queue[i,:,:] = np.array([self._latest_observations[i, :], ] * self.tcn_time_buffer).transpose()
         
+        self._observations_queue[:,:,1:] = self._observations_queue[:,:,:-1]
+        self._observations_queue[:,:,0] = self._latest_observations
+        self._observations = self._observations_queue[:, :, 0::self.tcn_subsampling]
+    
         return self._observations.copy(), self._reward.copy(), \
             self._done.copy(), info.copy()
-            
-    def get_images(self):
-        return self.images.copy()
 
     def stepUnity(self, action, send_id):
         receive_id = self.wrapper.stepUnity(action, self._odometry, self.imgs_array,
                                             self._reward, self._done, self._extraInfo, send_id)
 
         return receive_id
+
+    # def getImages(self):
+    #     return self.
+
+    def depth_to_distance(self, depth_map):
+        coord = np.indices((self.num_envs,128,128))
+        distance = np.power(depth_map,2) + np.power(np.multiply((coord[0,:,:,:] - 64)/64 * np.sqrt(3), depth_map),2) + np.power(np.multiply((coord[1,:,:,:] - 64)/64 * np.sqrt(3), depth_map),2)
+        return np.clip(np.sqrt(distance),0,1)
 
     def sample_actions(self):
         actions = []
@@ -151,7 +163,7 @@ class FlightEnvVec(VecEnv):
         self._reward = np.zeros(self.num_envs, dtype=np.float32)
         self.wrapper.reset(self._odometry, self.imgs_array)
 
-        self._observations[:, :self.num_obs] = self._odometry
+        self._latest_observations[:, :self.num_obs] = self._odometry
         images = self.imgs_array.reshape((self.num_envs, self.frame_dim[0],
                                                     self.frame_dim[1]), order='F')
         images_tensor = torch.from_numpy(images).float().to(self.device)
@@ -159,7 +171,11 @@ class FlightEnvVec(VecEnv):
         # images_tensor = images_tensor[:, :, :, [2,1,0]]
         # encode image
         _, encoded = self.net.encode(images_tensor.unsqueeze(1))
-        self._observations[:, self.num_obs:] = encoded.cpu().detach().numpy().reshape(self.num_envs, self.ae_fts)
+        # encoded = self.dumbNet(images_tensor)
+
+        self._latest_observations[:, self.num_obs:] = encoded.cpu().detach().numpy().reshape(self.num_envs, self.ae_fts)
+        self._observations_queue = np.array([self._latest_observations, ] * self.tcn_time_buffer).transpose(1,2,0)
+        self._observations = self._observations_queue[:, :, 0::self.tcn_subsampling]
 
         return self._observations.copy()
 
@@ -189,7 +205,7 @@ class FlightEnvVec(VecEnv):
 
     def connectUnity(self):
         return self.wrapper.connectUnity(self.pub_port, self.sub_port)
-
+        
 
     def disconnectUnity(self):
         self.wrapper.disconnectUnity()

@@ -12,9 +12,8 @@
 #include <map>
 #include <string>
 #include <unordered_map>
-
-// opencv
 #include <opencv2/imgproc/types_c.h>
+
 
 // Include ZMQ bindings for communications with Unity.
 #include <zmqpp/zmqpp.hpp>
@@ -41,7 +40,7 @@ class UnityBridge {
   ~UnityBridge(){};
 
   // connect function
-  bool connectUnity(const SceneID scene_id);
+  bool connectUnity(const SceneID scene_id, const int input_port, const int output_port);
   bool disconnectUnity(void);
 
   // public get functions
@@ -70,6 +69,7 @@ class UnityBridge {
 
   Vector<> object_density_fractions_;
   bool changed_density_ = false; 
+
  private:
   bool initializeConnections(void);
 
@@ -99,8 +99,9 @@ class UnityBridge {
   int64_t u_packet_latency_;
 
   bool connections_initialized_ = false;
+
   // axuiliary variables
-  const Scalar unity_connection_time_out_{10.0};
+  const Scalar unity_connection_time_out_{30.0};
   bool unity_ready_{false};
 };
 }  // namespace flightlib

@@ -25,11 +25,11 @@ static constexpr int Dynamic = Eigen::Dynamic;
 template<int rows = Dynamic, int cols = Dynamic>
 using Matrix = Eigen::Matrix<Scalar, rows, cols>;
 
-// Using shorthand for `Image<ros, cols>` with scalar type.
+// Using shorthand for `Matrix<ros, cols>` with scalar type.
 template<int rows = Dynamic, int cols = Dynamic>
 using Image_mat = Eigen::Matrix<uint8_t, rows, cols>;
 
-// Using shorthand for `Depth_image_mat<ros, cols>` with scalar type.
+// Using shorthand for `Matrix<ros, cols>` with scalar type.
 template<int rows = Dynamic, int cols = Dynamic>
 using Depth_image_mat = Eigen::Matrix<float_t, rows, cols>;
 

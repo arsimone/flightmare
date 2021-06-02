@@ -210,7 +210,7 @@ class OnPolicyAlgorithm(BaseAlgorithm):
                 self.rewards_components_envs_cumulative[env_idx, 3] += env_extra_info['ang_vel_rew']
                 self.rewards_components_envs_cumulative[env_idx, 4] += env_extra_info['act_rew']
                 self.rewards_components_envs_cumulative[env_idx, 5] += env_extra_info['survival_rew']
-                self.rewards_components_envs_cumulative[env_idx, 6] += env_extra_info['distances_rew']
+                self.rewards_components_envs_cumulative[env_idx, 6] += 0
                 if dones[env_idx]:
                     self.terminal_rewards_sum += env_extra_info['term_rew']
                     self.terminal_causes[int(env_extra_info['term_reason']-1)] += 1
@@ -560,7 +560,7 @@ class OnPolicyAlgorithmCustom(BaseAlgorithm):
                 self.rewards_components_envs_cumulative[env_idx, 3] += env_extra_info['ang_vel_rew']
                 self.rewards_components_envs_cumulative[env_idx, 4] += env_extra_info['act_rew']
                 self.rewards_components_envs_cumulative[env_idx, 5] += env_extra_info['survival_rew']
-                self.rewards_components_envs_cumulative[env_idx, 6] += env_extra_info['distances_rew']
+                self.rewards_components_envs_cumulative[env_idx, 6] += 0
                 if dones[env_idx]:
                     self.terminal_rewards_sum += env_extra_info['term_rew']
                     self.terminal_causes[int(env_extra_info['term_reason']-1)] += 1

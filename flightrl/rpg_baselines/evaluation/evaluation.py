@@ -62,7 +62,6 @@ def main():
     cfg_vec_env["env"]["num_threads"] = 1    
             
     env = wrapper.FlightEnvVec(QuadrotorEnv_v1(dump(cfg_vec_env, Dumper=RoundTripDumper), False))
-        
     configure_random_seed(args.seed, env=env)
             
     connectedToUnity = False 
@@ -95,7 +94,8 @@ def main():
                                           min_distance_between_consecutive_goals = 10,
                                           switch_goal_distance = 3)
     
-    object_density_fractions_initial = np.linspace(0, 1.0, num=num_density_values, dtype=np.float32)
+    # object_density_fractions_initial = np.linspace(0, 1.0, num=num_density_values, dtype=np.float32)
+    object_density_fractions_initial = np.ones(num_density_values, dtype=np.float32)
     object_density_fractions_different_episodes = np.repeat(object_density_fractions_initial, num_rollouts_per_density)
     object_density_fractions_different_episodes[(num_rollouts_per_density-1):-1] = object_density_fractions_different_episodes[num_rollouts_per_density:]
     env.set_objects_densities(object_density_fractions = object_density_fractions_initial[0].reshape(1, -1))

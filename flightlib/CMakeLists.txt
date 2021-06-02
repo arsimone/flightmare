@@ -85,7 +85,6 @@ message(STATUS "======> Setup Compilation")
 
 add_definitions(-DEIGEN_STACK_ALLOCATION_LIMIT=1048576)
 include_directories(${EIGEN_INCLUDE_DIR} "tests")
-include_directories(${OpenCV_INCLUDE_DIRS})
 
 # Set default build type
 if (NOT EXISTS ${CMAKE_BINARY_DIR}/CMakeCache.txt)
@@ -94,9 +93,13 @@ if (NOT EXISTS ${CMAKE_BINARY_DIR}/CMakeCache.txt)
   endif()
 endif()
 
+#set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
+
+# execute_process(COMMAND  python3-config --includes OUTPUT_VARIABLE PYTHON_INCLUDE_PATH)
+
 # Add c++ flags 
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -fPIC -Wall -DNDEBUG  -fopenmp")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -fPIC -Wall -g -fopenmp")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -fPIC -Wall -DNDEBUG  -fopenmp -I/usr/include/python3.6 -lpython3.6m") #${PYTHON_INCLUDE_PATH} -lpython3.6m")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -fPIC -Wall -g -fopenmp -I/usr/include/python3.6 -lpython3.6m") #${PYTHON_INCLUDE_PATH} -lpython3.6m")
 set(CMAKE_CXX_STANDARD 17)
 
 # Architectural flags
@@ -217,13 +220,13 @@ if(FLIGHTLIB_GYM_SOURCES)
     ${FLIGHTLIB_GYM_SOURCES})
   if(EIGEN3_FOUND)
     target_include_directories(flightgym PRIVATE
-      # ${PROJECT_SOURCE_DIR}/externals/pybind11-src/include
+      #${PROJECT_SOURCE_DIR}/externals/pybind11-src/include
       ${PYBIND11_INCLUDE_DIR}
       ${PROJECT_SOURCE_DIR}/include
       ${EIGEN3_INCLUDE_DIR})  
   else()
     target_include_directories(flightgym PRIVATE
-      # ${PROJECT_SOURCE_DIR}/externals/pybind11-src/include
+      #${PROJECT_SOURCE_DIR}/externals/pybind11-src/include
       ${PYBIND11_INCLUDE_DIR}
       ${PROJECT_SOURCE_DIR}/externals/eigen/eigen3 #pybind11 use #include <Eigen/Core>, however, flightmare use #include <eigen3/Eigen/Core>
       ${PROJECT_SOURCE_DIR}/include)  

@@ -19,6 +19,7 @@ void TestEnv<EnvBase>::reset(
   obs << 1, 2, 3, 4, 5, 6, 7, 8, 9;
 }
 
+// template class TestEnv<QuadrotorEnv>;
 template class TestEnv<QuadrotorEnv>;
 
 }  // namespace flightlib

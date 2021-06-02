@@ -10,6 +10,7 @@
 #include "flightlib/objects/object_base.hpp"
 #include "flightlib/sensors/imu.hpp"
 #include "flightlib/sensors/rgb_camera.hpp"
+#include "flightlib/common/logger.hpp"
 
 namespace flightlib {
 
@@ -60,7 +61,7 @@ class Quadrotor : ObjectBase {
   bool constrainInWorldBox(const QuadState& old_state);
 
   Vector<3> box_center_ = Vector<3>::Zero();
-
+  Vector<3> reference_velocity_abs_ = Vector<3>::Zero();
   //
   inline Scalar getMass(void) { return dynamics_.getMass(); };
   inline void setSize(const Ref<Vector<3>> size) { size_ = size; };
@@ -68,6 +69,7 @@ class Quadrotor : ObjectBase {
   inline bool getCollision() { return collision_; };
 
  private:
+  Logger logger_{"Quadrotor"};
   // quadrotor dynamics, integrators
   QuadrotorDynamics dynamics_;
   IMU imu_;
