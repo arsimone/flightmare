@@ -38,6 +38,9 @@ struct Camera_t {
   int width{1024};
   int height{768};
   Scalar fov{70.0f};
+  // Clip Planes for the different layers
+  std::vector<Scalar> near_clip_plane{0.01, 0.01, 0.01, 0.01};
+  std::vector<Scalar> far_clip_plane{1000.0, 100.0, 1000.0, 1000.0};
   Scalar depth_scale{0.20};  // 0.xx corresponds to xx cm resolution
   // metadata
   bool is_depth{false};
@@ -69,7 +72,7 @@ struct Vehicle_t {
   std::vector<Scalar> position{0.0, 0.0, 0.0};
   // goal position for each drone
   std::vector<Scalar> box_center{0.0, 0.0, 0.0};
-  std::vector<Scalar> reference_velocity{0.0, 0.0, 0.0}; 
+  std::vector<Scalar> goal_direction{0.0, 0.0, 0.0};
   std::vector<Scalar> drone_velocity{0.0, 0.0, 0.0};
   // unity quaternion (x, y, z, w)
   std::vector<Scalar> rotation{0.0, 0.0, 0.0, 1.0};
@@ -140,6 +143,8 @@ inline void to_json(json &j, const Camera_t &o) {
            {"width", o.width},
            {"height", o.height},
            {"fov", o.fov},
+           {"nearClipPlane", o.near_clip_plane},
+           {"farClipPlane", o.far_clip_plane},
            {"T_BC", o.T_BC},
            {"isDepth", o.is_depth},
            {"enabledLayers", o.enabled_layers},
@@ -162,7 +167,7 @@ inline void to_json(json &j, const Vehicle_t &o) {
            {"position", o.position},
            {"rotation", o.rotation},
            {"box_center", o.box_center},
-           {"reference_velocity", o.reference_velocity},
+           {"goal_direction", o.goal_direction},
            {"drone_velocity", o.drone_velocity},
            {"size", o.size},
            {"cameras", o.cameras},

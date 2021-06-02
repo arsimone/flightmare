@@ -85,7 +85,8 @@ class FlightEnvVec(VecEnv):
         if self.render:
             with torch.no_grad():
                 images = 1 - self.imgs_array.reshape((self.num_envs, self.frame_dim[0],
-                                                    self.frame_dim[1]), order='F')
+                                                    self.frame_dim[1]), order='F')*15/6
+                images[images<0] = 0
                 self.images = images
                 images_tensor = torch.from_numpy(images).float().to(self.device)
                 

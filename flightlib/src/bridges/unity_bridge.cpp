@@ -251,24 +251,22 @@ bool UnityBridge::handleOutput() {
       
           cv::flip(new_image, new_image, 0);
 
-          cv::imshow("Onboard Camera", new_image);
-          cv::waitKey(1);
+          // cv::imshow("Onboard Camera", new_image);
+          // cv::waitKey(1);
 
           unity_quadrotors_[idx]
             ->getCameras()[cam.output_index]
             ->feedImageQueue(layer_idx, new_image);
 
         } else {
-          logger_.warn("line 271");
           uint32_t image_len = cam.width * cam.height * cam.channels;
+
           // Get raw image bytes from ZMQ message.
           // WARNING: This is a zero-copy operation that also casts the input to
           // an array of unit8_t. when the message is deleted, this pointer is
           // also dereferenced.
           const uint8_t* image_data;
-          logger_.warn("line 278");
           msg.get(image_data, image_i);
-          logger_.warn("line 279");
           image_i = image_i + 1;
           // Pack image into cv::Mat
           cv::Mat new_image =
@@ -282,12 +280,11 @@ bool UnityBridge::handleOutput() {
           if (cam.channels == 3) {
             cv::cvtColor(new_image, new_image, CV_RGB2BGR);
           }
-          logger_.warn("line 297");
           unity_quadrotors_[idx]->getCameras()[cam.output_index]->feedImageQueue(layer_idx, new_image);
-          logger_.warn("line 297");
         }
       }
     }
+    break;
   }
   return true;
 }
